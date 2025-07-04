@@ -1,0 +1,31 @@
+﻿[project]
+name = "1c-accounting-mcp"
+version = "1.0.0"
+description = "1C Enterprise Accounting MCP server with tools for financial analysis and reporting"
+authors = [
+    {name = "Maxim", email = "maks.tarasov.rus04@gmail.com"}
+]
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+keywords = ["1c", "accounting", "mcp", "enterprise", "бухгалтерия"]
+
+dependencies = [
+    "mcp>=1.0.0",
+    "fastmcp>=0.1.0", 
+    "python-dotenv>=1.0.0",
+    "requests>=2.32.3",
+    "httpx>=0.28.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/tarasov46/1c-accounting-mcp"
+Repository = "https://github.com/tarasov46/1c-accounting-mcp"
+Issues = "https://github.com/tarasov46/1c-accounting-mcp/issues"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]

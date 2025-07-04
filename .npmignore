@@ -1,0 +1,31 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+
+# Development
+.vscode/
+.idea/
+*.swp
+test/
+.env
+*.log
+
+# Git
+.git/
+.gitignore
+
+# Node.js development
+node_modules/
+package-lock.json
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
