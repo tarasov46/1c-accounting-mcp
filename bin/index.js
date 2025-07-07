@@ -1,85 +1,94 @@
 #!/usr/bin/env node
 
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-// Логотип
-console.log(`
-1C Accounting MCP Server
-========================
-Organization: @tarasov46
-Starting MCP server for 1C Enterprise Accounting...
+console.error(`
+1C Accounting MCP Server v1.0.1
+===============================
+Author: tarasov46
+Starting MCP server...
 `);
 
-// Путь к Python серверу
-const serverPath = path.join(__dirname, '..', 'src', 'server.py');
-
-// Проверяем наличие Python сервера
-if (!fs.existsSync(serverPath)) {
-    console.error('ERROR: Python server not found at:', serverPath);
-    process.exit(1);
+function checkPythonVersion(pythonCmd) {
+    try {
+        const versionOutput = execSync(`${pythonCmd} --version 2>&1`, { 
+            encoding: 'utf8',
+            timeout: 5000
+        });
+        
+        const versionMatch = versionOutput.match(/Python (\d+)\.(\d+)/);
+        if (versionMatch) {
+            const major = parseInt(versionMatch[1]);
+            const minor = parseInt(versionMatch[2]);
+            
+            if (major > 3 || (major === 3 && minor >= 10)) {
+                console.error(`✓ Found Python: ${versionOutput.trim()}`);
+                return true;
+            } else {
+                console.error(`✗ Python version too old: ${versionOutput.trim()}`);
+                console.error(`  Required: Python >= 3.10`);
+                return false;
+            }
+        }
+        return false;
+    } catch (error) {
+        return false;
+    }
 }
 
-// Функция поиска Python
-function findPython() {
-    const pythonCommands = ['python3', 'python'];
+function findCompatiblePython() {
+    const pythonCommands = ['python3', 'python', 'python3.10', 'python3.11', 'python3.12'];
     
     for (const cmd of pythonCommands) {
-        try {
-            const { execSync } = require('child_process');
-            const version = execSync(`${cmd} --version 2>&1`, { 
-                encoding: 'utf8',
-                timeout: 5000
-            });
-            
-            if (version.includes('Python 3')) {
-                console.log(`Found Python: ${cmd} (${version.trim()})`);
-                return cmd;
-            }
-        } catch (error) {
-            continue;
+        if (checkPythonVersion(cmd)) {
+            return cmd;
         }
     }
     return null;
 }
 
-// Проверка и установка зависимостей Python
 async function setupPythonEnvironment() {
-    const pythonCmd = findPython();
+    const pythonCmd = findCompatiblePython();
+    
     if (!pythonCmd) {
-        console.error('ERROR: Python 3 not found. Please install Python 3.8+');
-        console.error('Download from: https://python.org');
+        console.error(`
+ERROR: Compatible Python not found!
+
+Requirements:
+- Python 3.10 or higher
+- pip package manager
+
+Installation: https://python.org/downloads/
+        `);
         process.exit(1);
     }
 
     const requirementsPath = path.join(__dirname, '..', 'requirements.txt');
     
     if (fs.existsSync(requirementsPath)) {
-        console.log('Checking Python dependencies for 1C MCP server...');
+        console.error('Checking Python dependencies...');
         
         try {
-            // Проверяем ключевые зависимости
-            const { execSync } = require('child_process');
-            execSync(`${pythonCmd} -c "import mcp.server.fastmcp; print('MCP OK')"`, { 
+            execSync(`${pythonCmd} -c "import mcp.server; print('MCP OK')"`, { 
                 stdio: 'pipe',
                 timeout: 10000
             });
-            console.log('Python dependencies are installed');
+            console.error('✓ Dependencies installed');
         } catch (error) {
-            console.log('Installing Python dependencies for 1C integration...');
-            console.log('This may take a few moments...');
+            console.error('Installing dependencies...');
             
             try {
-                execSync(`${pythonCmd} -m pip install -r "${requirementsPath}"`, {
+                const installCmd = `${pythonCmd} -m pip install -r "${requirementsPath}"`;
+                execSync(installCmd, {
                     stdio: 'inherit',
-                    timeout: 120000
+                    timeout: 180000
                 });
-                console.log('Dependencies installed successfully');
+                console.error('✓ Dependencies installed successfully');
             } catch (installError) {
-                console.error('ERROR: Failed to install Python dependencies');
-                console.error('Please run manually:');
-                console.error(`  ${pythonCmd} -m pip install -r requirements.txt`);
+                console.error(`ERROR: Failed to install dependencies`);
+                console.error(`Manual install: ${pythonCmd} -m pip install -r requirements.txt`);
                 process.exit(1);
             }
         }
@@ -88,50 +97,45 @@ async function setupPythonEnvironment() {
     return pythonCmd;
 }
 
-// Основная функция
 async function main() {
     try {
-        console.log('Setting up Python environment for 1C MCP server...');
+        const serverPath = path.join(__dirname, '..', 'src', 'server.py');
+        if (!fs.existsSync(serverPath)) {
+            console.error('ERROR: server.py not found');
+            process.exit(1);
+        }
+
         const pythonCmd = await setupPythonEnvironment();
         
-        console.log('Starting 1C Accounting MCP server in stdio mode...');
-        console.log('Available tools: hello_1c, test_calculation, generate_test_data');
-        console.log('Press Ctrl+C to stop');
-        console.log('');
+        console.error('Starting 1C MCP server...');
+        console.error('Tools: hello_1c, test_calculation, generate_test_data, get_server_status');
+        console.error('');
         
-        // Запуск Python сервера
         const pythonProcess = spawn(pythonCmd, [serverPath], {
-            stdio: ['inherit', 'inherit', 'inherit'],
+            stdio: 'inherit',
             cwd: path.join(__dirname, '..'),
             env: {
                 ...process.env,
-                PYTHONPATH: path.join(__dirname, '..')
+                PYTHONPATH: path.join(__dirname, '..', 'src'),
+                PYTHONUNBUFFERED: '1'
             }
         });
 
-        // Обработка сигналов для корректного завершения
         process.on('SIGINT', () => {
-            console.log('\nShutting down 1C MCP server...');
-            pythonProcess.kill('SIGTERM');
-            setTimeout(() => {
-                pythonProcess.kill('SIGKILL');
-            }, 5000);
-        });
-
-        process.on('SIGTERM', () => {
+            console.error('\nShutting down...');
             pythonProcess.kill('SIGTERM');
         });
 
         pythonProcess.on('close', (code) => {
             if (code !== 0 && code !== null) {
-                console.error(`ERROR: 1C MCP server exited with code ${code}`);
+                console.error(`Server exited with code ${code}`);
                 process.exit(code);
             }
-            console.log('1C MCP server stopped gracefully');
+            process.exit(0);
         });
 
         pythonProcess.on('error', (error) => {
-            console.error('ERROR: Failed to start 1C MCP server:', error.message);
+            console.error('ERROR:', error.message);
             process.exit(1);
         });
 
@@ -141,10 +145,11 @@ async function main() {
     }
 }
 
-// Запуск
 if (require.main === module) {
     main().catch(error => {
-        console.error('ERROR: Unexpected error:', error);
+        console.error('ERROR:', error);
         process.exit(1);
     });
 }
+
+module.exports = { main };

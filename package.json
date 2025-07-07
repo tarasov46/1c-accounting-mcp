@@ -1,6 +1,6 @@
 {
   "name": "@tarasov46/1c-accounting-mcp",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "1C Enterprise Accounting MCP server with tools for financial analysis and reporting",
   "main": "bin/index.js",
   "bin": {
@@ -8,10 +8,11 @@
   },
   "scripts": {
     "start": "node bin/index.js",
+    "dev": "python src/server.py",
     "test": "python src/server.py"
   },
   "keywords": ["1c", "accounting", "mcp", "enterprise", "бухгалтерия"],
-  "author": "Your Name",
+  "author": "tarasov46",
   "license": "MIT",
   "engines": {
     "node": ">=16.0.0"
