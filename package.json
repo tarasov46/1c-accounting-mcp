@@ -1,6 +1,6 @@
 {
   "name": "@tarasov46/1c-accounting-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "1C Enterprise Accounting MCP server with tools for financial analysis and reporting",
   "main": "bin/index.js",
   "bin": {
