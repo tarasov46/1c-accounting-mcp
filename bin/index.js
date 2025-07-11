@@ -4,12 +4,13 @@ const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-console.error(`
-1C Accounting MCP Server v1.0.1
-===============================
-Author: tarasov46
-Starting MCP server...
-`);
+// Убираем баннер - он мешает MCP протоколу
+// console.error(`
+// 1C Accounting MCP Server v1.0.1
+// ===============================
+// Author: tarasov46
+// Starting MCP server...
+// `);
 
 function checkPythonVersion(pythonCmd) {
     try {
@@ -24,7 +25,7 @@ function checkPythonVersion(pythonCmd) {
             const minor = parseInt(versionMatch[2]);
             
             if (major > 3 || (major === 3 && minor >= 10)) {
-                console.error(`✓ Found Python: ${versionOutput.trim()}`);
+                // console.error(`✓ Found Python: ${versionOutput.trim()}`);
                 return true;
             } else {
                 console.error(`✗ Python version too old: ${versionOutput.trim()}`);
@@ -68,24 +69,24 @@ Installation: https://python.org/downloads/
     const requirementsPath = path.join(__dirname, '..', 'requirements.txt');
     
     if (fs.existsSync(requirementsPath)) {
-        console.error('Checking Python dependencies...');
+        // console.error('Checking Python dependencies...');
         
         try {
             execSync(`${pythonCmd} -c "import mcp.server; print('MCP OK')"`, { 
                 stdio: 'pipe',
                 timeout: 10000
             });
-            console.error('✓ Dependencies installed');
+            // console.error('✓ Dependencies installed');
         } catch (error) {
-            console.error('Installing dependencies...');
+            // console.error('Installing dependencies...');
             
             try {
                 const installCmd = `${pythonCmd} -m pip install -r "${requirementsPath}"`;
                 execSync(installCmd, {
-                    stdio: 'inherit',
+                    stdio: 'pipe',  // Не показываем процесс установки
                     timeout: 180000
                 });
-                console.error('✓ Dependencies installed successfully');
+                // console.error('✓ Dependencies installed successfully');
             } catch (installError) {
                 console.error(`ERROR: Failed to install dependencies`);
                 console.error(`Manual install: ${pythonCmd} -m pip install -r requirements.txt`);
@@ -107,9 +108,10 @@ async function main() {
 
         const pythonCmd = await setupPythonEnvironment();
         
-        console.error('Starting 1C MCP server...');
-        console.error('Tools: hello_1c, test_calculation, generate_test_data, get_server_status');
-        console.error('');
+        // Убираем информационные сообщения - они мешают MCP
+        // console.error('Starting 1C MCP server...');
+        // console.error('Tools: hello_1c, test_calculation, generate_test_data, get_server_status');
+        // console.error('');
         
         const pythonProcess = spawn(pythonCmd, [serverPath], {
             stdio: 'inherit',
@@ -122,7 +124,7 @@ async function main() {
         });
 
         process.on('SIGINT', () => {
-            console.error('\nShutting down...');
+            // console.error('\nShutting down...');
             pythonProcess.kill('SIGTERM');
         });
 

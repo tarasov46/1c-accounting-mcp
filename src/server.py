@@ -20,10 +20,11 @@ config = ServerConfig(
     debug=os.getenv('DEBUG', 'false').lower() == 'true'
 )
 
-# Настройка логирования
+# Настройка логирования - выводим в stderr, а не stdout
 logging.basicConfig(
-    level=logging.DEBUG if config.debug else logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG if config.debug else logging.WARNING,  # Меньше логов
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=__import__('sys').stderr  # Принудительно в stderr
 )
 logger = logging.getLogger(config.server_name)
 
@@ -311,16 +312,19 @@ async def get_resource(resource_name: str) -> str:
 
 def main():
     """Основная функция запуска MCP сервера"""
-    logger.info(f"Запуск {config.server_name} v{config.version}")
-    logger.info(f"Автор: {config.author}")
-    logger.info(f"Доступно ресурсов: {len(_REGISTERED_RESOURCES)}")
+    # Убираем лишние логи при старте - они мешают MCP протоколу
+    # logger.info(f"Запуск {config.server_name} v{config.version}")
+    # logger.info(f"Автор: {config.author}")
+    # logger.info(f"Доступно ресурсов: {len(_REGISTERED_RESOURCES)}")
 
     try:
         mcp.run(transport='stdio')
     except KeyboardInterrupt:
-        logger.info("Получен сигнал завершения")
+        pass  # Тихий выход без логов
     except Exception as e:
-        logger.error(f"Ошибка сервера: {e}")
+        # Логи ошибок только в stderr
+        import sys
+        print(f"ОШИБКА: {e}", file=sys.stderr)
         raise
 
 
